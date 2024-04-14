@@ -1,14 +1,32 @@
 package api
 
 import (
-	"github.com/conqdat/hotel-api/types"
+	"context"
+	"fmt"
+	"github.com/conqdat/hotel-api/db"
 	"github.com/gofiber/fiber/v2"
 )
 
-func HandleGetUser(ctx *fiber.Ctx) error {
-	user := types.User{
-		FirstName: "Tran",
-		LastName:  "Dat",
+type UserHandler struct {
+	userStore db.UserStore
+}
+
+func NewUserHandler(userStore db.UserStore) *UserHandler {
+	return &UserHandler{
+		userStore: userStore,
 	}
-	return ctx.JSON(user)
+}
+
+func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
+	var (
+		id  = c.Params("id")
+		ctx = context.Background()
+	)
+	user, err := h.userStore.GetUserByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	fmt.Println(user)
+
+	return c.JSON(user)
 }
