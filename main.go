@@ -30,7 +30,9 @@ func main() {
 	apiV1 := app.Group("/api/v1")
 
 	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
-	apiV1.Get("/user/:id", userHandler.HandleGetUser)
+	apiV1.Get("/users/:id", userHandler.HandleGetUser)
+	apiV1.Get("/users", userHandler.HandleGetUsers)
+	apiV1.Post("/users", userHandler.HandleCreateUser)
 
 	app.Get("/", handleHelloWord)
 	app.Listen(":3000")
