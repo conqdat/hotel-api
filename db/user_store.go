@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"github.com/conqdat/hotel-api/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,13 +29,17 @@ func NewMongoUserStore(client *mongo.Client) *MongoDBStore {
 		coll:   client.Database(DBNAME).Collection(userColl),
 	}
 }
-
 func (s *MongoDBStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {
 	res, err := s.coll.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-	user.ID = res.InsertedID.(primitive.ObjectID)
+	// Ensure the inserted ID is a valid ObjectID
+	insertedID, ok := res.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, fmt.Errorf("error: inserted ID is not a valid ObjectID")
+	}
+	user.ID = insertedID
 	return user, nil
 }
 
@@ -56,7 +61,7 @@ func (s *MongoDBStore) GetUsers(ctx context.Context) ([]*types.User, error) {
 		return nil, err
 	}
 	var users []*types.User
-	if err := cur.Decode(&users); err != nil {
+	if err := cur.All(ctx, &users); err != nil {
 		return []*types.User{}, err
 	}
 	return users, nil
