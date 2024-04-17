@@ -32,6 +32,7 @@ func main() {
 	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
 	apiV1.Get("/users/:id", userHandler.HandleGetUser)
 	apiV1.Delete("/users/:id", userHandler.HandleDeleteUser)
+	apiV1.Put("/users/:id", userHandler.HandlePutUser)
 	apiV1.Get("/users", userHandler.HandleGetUsers)
 	apiV1.Post("/users", userHandler.HandleCreateUser)
 
