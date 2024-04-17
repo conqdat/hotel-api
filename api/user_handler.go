@@ -11,6 +11,10 @@ type UserHandler struct {
 	userStore db.UserStore
 }
 
+type ErrorResponse struct {
+	Errors []string `json:"errors"`
+}
+
 func NewUserHandler(userStore db.UserStore) *UserHandler {
 	return &UserHandler{
 		userStore: userStore,
@@ -21,6 +25,9 @@ func (h *UserHandler) HandleCreateUser(c *fiber.Ctx) error {
 	var params types.CreateUserParams
 	if err := c.BodyParser(&params); err != nil {
 		return err
+	}
+	if errs := params.Validate(); len(errs) > 0 {
+		return c.JSON(errs)
 	}
 	user, err := types.NewUserFromParams(params)
 	if err != nil {
