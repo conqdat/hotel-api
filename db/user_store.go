@@ -9,10 +9,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-const DBNAME = "hotel-reservation"
 const userColl = "users"
 
+type Dropper interface {
+	Drop(context.Context) error
+}
+
 type UserStore interface {
+	Dropper
 	GetUserByID(context.Context, string) (*types.User, error)
 	GetUsers(context.Context) ([]*types.User, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
@@ -25,12 +29,17 @@ type MongoDBStore struct {
 	coll   *mongo.Collection
 }
 
-func NewMongoUserStore(client *mongo.Client) *MongoDBStore {
+func NewMongoUserStore(client *mongo.Client, dbname string) *MongoDBStore {
 	return &MongoDBStore{
 		client: client,
-		coll:   client.Database(DBNAME).Collection(userColl),
+		coll:   client.Database(dbname).Collection(userColl),
 	}
 }
+
+func (s *MongoDBStore) Drop(ctx context.Context) error {
+	return s.coll.Drop(ctx)
+}
+
 func (s *MongoDBStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {
 	res, err := s.coll.InsertOne(ctx, user)
 	if err != nil {
