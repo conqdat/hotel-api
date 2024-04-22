@@ -10,10 +10,6 @@ import (
 	"log"
 )
 
-const dburi = "mongodb://localhost:27017"
-const dbname = "hotel-reservation"
-const userCollections = "users"
-
 var config = fiber.Config{
 	ErrorHandler: func(c *fiber.Ctx, err error) error {
 		return c.JSON(map[string]string{"error": err.Error()})
@@ -21,7 +17,7 @@ var config = fiber.Config{
 }
 
 func main() {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -29,7 +25,7 @@ func main() {
 	app := fiber.New(config)
 	apiV1 := app.Group("/api/v1")
 
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client, dbname))
+	userHandler := api.NewUserHandler(db.NewMongoUserStore(client, db.DBNAME))
 	apiV1.Get("/users/:id", userHandler.HandleGetUser)
 	apiV1.Delete("/users/:id", userHandler.HandleDeleteUser)
 	apiV1.Put("/users/:id", userHandler.HandlePutUser)
