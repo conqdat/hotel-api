@@ -34,5 +34,9 @@ func (s *MongoRoomStore) InsertRoom(ctx context.Context, room *types.Room) (*typ
 		return nil, fmt.Errorf("error: inserted ID is not a valid ObjectID")
 	}
 	room.ID = insertedID
+
+	// update the hotel with this room id
+	//filter := bson.M{"_id", room.HotelID}
+	//update := bson.M
 	return room, nil
 }
