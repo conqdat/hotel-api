@@ -7,5 +7,5 @@
 ## DOCKER 
 ## Mongo DB
 ```
- docker run --name my_mongodb_container -d mongo:latest -p 27017:27017
+ docker run --name my_mongodb_container -d -p 27017:27017 mongo:latest
 ```
