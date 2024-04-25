@@ -1,9 +1,10 @@
 package api
 
 import (
-	"fmt"
 	"github.com/conqdat/hotel-api/db"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type HotelHandler struct {
@@ -18,22 +19,24 @@ func NewHotelHandler(hotelStore db.HotelStore, roomStore db.RoomStore) *HotelHan
 	}
 }
 
-type HotelQueryParams struct {
-	Rooms  bool
-	Rating int
-}
-
 func (h *HotelHandler) HandleGetHotels(c *fiber.Ctx) error {
-	var qparams HotelQueryParams
-	if err := c.QueryParser(&qparams); err != nil {
-		return err
-	}
-
-	fmt.Println("params ", qparams)
-
 	hotels, err := h.hotelStore.GetHotels(c.Context())
 	if err != nil {
 		return err
 	}
 	return c.JSON(hotels)
+}
+
+func (h *HotelHandler) HandleGetRoom(c *fiber.Ctx) error {
+	id := c.Params("id")
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"hotelid": oid} // I dont know why hotelID not work !!!
+	rooms, err := h.roomStore.GetRooms(c.Context(), filter)
+	if err != nil {
+		return err
+	}
+	return c.JSON(rooms)
 }

@@ -42,6 +42,7 @@ func main() {
 
 	// Hotel Handlers
 	apiV1.Get("/hotels", hotelHandler.HandleGetHotels)
+	apiV1.Get("/hotels/:id/rooms", hotelHandler.HandleGetRoom)
 
 	app.Get("/", handleHelloWord)
 	app.Listen(":3000")
