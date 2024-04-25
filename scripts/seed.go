@@ -5,20 +5,25 @@ import (
 	"fmt"
 	"github.com/conqdat/hotel-api/db"
 	"github.com/conqdat/hotel-api/types"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 )
 
-func main() {
-	ctx := context.Background()
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
-	if err != nil {
-		log.Fatalln(err)
-	}
+var (
+	client     *mongo.Client
+	roomStore  db.RoomStore
+	hotelStore db.HotelStore
+	ctx        = context.Background()
+)
 
-	hotelStore := db.NewMongoHotelStore(client, db.DBNAME)
-	roomStore := db.NewMongoRoomStore(client, db.DBNAME)
+func seedHotel(name, location string) {
+	hotel := types.Hotel{
+		Name:     name,
+		Location: location,
+		Rooms:    []primitive.ObjectID{},
+	}
 
 	rooms := []types.Room{
 		{
@@ -34,24 +39,38 @@ func main() {
 			BasePrice: 2399.9,
 		},
 	}
-
-	hotel := types.Hotel{
-		Name:     "Hotel one",
-		Location: "US",
-		Rooms:    nil,
-	}
-	insertedHotel, err := hotelStore.InsertHotel(ctx, &hotel)
+	_, err := hotelStore.InsertHotel(context.Background(), &hotel)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	for _, room := range rooms {
 		room.HotelID = hotel.ID
-		insertedRoom, err := roomStore.InsertRoom(ctx, &room)
+		_, err := roomStore.InsertRoom(ctx, &room)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		fmt.Println(insertedRoom)
 	}
-	fmt.Println(insertedHotel)
+	fmt.Printf("seed %v hotel successfully \n", name)
+}
+
+func main() {
+	seedHotel("Bellucia", "US")
+	seedHotel("VinFast", "UK")
+	seedHotel("Something", "JP")
+}
+
+func init() {
+	var err error
+	ctx := context.Background()
+	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	if err := client.Database(db.DBNAME).Drop(ctx); err != nil {
+		log.Fatalln(err)
+	}
+
+	hotelStore = db.NewMongoHotelStore(client)
+	roomStore = db.NewMongoRoomStore(client, hotelStore)
 }
