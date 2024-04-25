@@ -8,19 +8,17 @@ import (
 )
 
 type HotelHandler struct {
-	roomStore  db.RoomStore
-	hotelStore db.HotelStore
+	store *db.Store
 }
 
-func NewHotelHandler(hotelStore db.HotelStore, roomStore db.RoomStore) *HotelHandler {
+func NewHotelHandler(store *db.Store) *HotelHandler {
 	return &HotelHandler{
-		hotelStore: hotelStore,
-		roomStore:  roomStore,
+		store: store,
 	}
 }
 
 func (h *HotelHandler) HandleGetHotels(c *fiber.Ctx) error {
-	hotels, err := h.hotelStore.GetHotels(c.Context())
+	hotels, err := h.store.Hotel.GetHotels(c.Context())
 	if err != nil {
 		return err
 	}
@@ -34,9 +32,22 @@ func (h *HotelHandler) HandleGetRoom(c *fiber.Ctx) error {
 		return err
 	}
 	filter := bson.M{"hotelid": oid} // I dont know why hotelID not work !!!
-	rooms, err := h.roomStore.GetRooms(c.Context(), filter)
+	rooms, err := h.store.Room.GetRooms(c.Context(), filter)
 	if err != nil {
 		return err
 	}
 	return c.JSON(rooms)
+}
+
+func (h *HotelHandler) HandleGetHotelByID(c *fiber.Ctx) error {
+	id := c.Params("id")
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	hotel, err := h.store.Hotel.GetHotelByID(c.Context(), oid)
+	if err != nil {
+		return err
+	}
+	return c.JSON(hotel)
 }

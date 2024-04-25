@@ -27,10 +27,16 @@ func main() {
 		apiV1 = app.Group("/api/v1")
 
 		// Init Handler
-		userHandler  = api.NewUserHandler(db.NewMongoUserStore(client, db.DBNAME))
-		hotelStore   = db.NewMongoHotelStore(client)
-		roomStore    = db.NewMongoRoomStore(client, hotelStore)
-		hotelHandler = api.NewHotelHandler(hotelStore, roomStore)
+		hotelStore = db.NewMongoHotelStore(client)
+		roomStore  = db.NewMongoRoomStore(client, hotelStore)
+		userStore  = db.NewMongoUserStore(client)
+		store      = &db.Store{
+			Hotel: hotelStore,
+			Room:  roomStore,
+			User:  userStore,
+		}
+		hotelHandler = api.NewHotelHandler(store)
+		userHandler  = api.NewUserHandler(userStore)
 	)
 
 	// User Handlers
@@ -43,6 +49,7 @@ func main() {
 	// Hotel Handlers
 	apiV1.Get("/hotels", hotelHandler.HandleGetHotels)
 	apiV1.Get("/hotels/:id/rooms", hotelHandler.HandleGetRoom)
+	apiV1.Get("/hotels/:id", hotelHandler.HandleGetHotelByID)
 
 	app.Get("/", handleHelloWord)
 	app.Listen(":3000")
