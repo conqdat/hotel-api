@@ -22,14 +22,16 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	app := fiber.New(config)
-	apiV1 := app.Group("/api/v1")
+	var (
+		app   = fiber.New(config)
+		apiV1 = app.Group("/api/v1")
 
-	// Init Handler
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client, db.DBNAME))
-	hotelStore := db.NewMongoHotelStore(client)
-	roomStore := db.NewMongoRoomStore(client, hotelStore)
-	hotelHandler := api.NewHotelHandler(hotelStore, roomStore)
+		// Init Handler
+		userHandler  = api.NewUserHandler(db.NewMongoUserStore(client, db.DBNAME))
+		hotelStore   = db.NewMongoHotelStore(client)
+		roomStore    = db.NewMongoRoomStore(client, hotelStore)
+		hotelHandler = api.NewHotelHandler(hotelStore, roomStore)
+	)
 
 	// User Handlers
 	apiV1.Get("/users/:id", userHandler.HandleGetUser)
