@@ -23,8 +23,9 @@ func main() {
 	}
 
 	var (
-		app   = fiber.New(config)
-		apiV1 = app.Group("/api/v1")
+		app     = fiber.New(config)
+		apiV1   = app.Group("/api/v1")
+		apiAuth = app.Group("/api")
 
 		// Init Handler
 		hotelStore = db.NewMongoHotelStore(client)
@@ -37,6 +38,7 @@ func main() {
 		}
 		hotelHandler = api.NewHotelHandler(store)
 		userHandler  = api.NewUserHandler(userStore)
+		authHandler  = api.NewAuthHandle(userStore)
 	)
 
 	// User Handlers
@@ -45,6 +47,9 @@ func main() {
 	apiV1.Put("/users/:id", userHandler.HandlePutUser)
 	apiV1.Get("/users", userHandler.HandleGetUsers)
 	apiV1.Post("/users", userHandler.HandleCreateUser)
+
+	// Authentication Handlers
+	apiAuth.Post("/login", authHandler.HandleAuthenticate)
 
 	// Hotel Handlers
 	apiV1.Get("/hotels", hotelHandler.HandleGetHotels)

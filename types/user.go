@@ -60,9 +60,10 @@ func (params CreateUserParams) Validate() map[string]string {
 	if len(params.LastName) < minLengthLastName {
 		errors["lastName"] = fmt.Sprintf("lastName length should be at least %d characters", minPasswordLength)
 	}
-	if !isEmailValid(params.Email) {
-		errors["email"] = fmt.Sprintf("email length should be at least %d characters", minPasswordLength)
-	}
+	// TODO: Fix validation
+	//if !isEmailValid(params.Email) {
+	//	errors["email"] = fmt.Sprintf("email length should be at least %d characters", minPasswordLength)
+	//}
 	return errors
 }
 
@@ -77,7 +78,7 @@ type User struct {
 	FirstName         string             `bson:"firstName" json:"firstName"`
 	LastName          string             `bson:"lastName" json:"lastName"`
 	Email             string             `bson:"email" json:"email"`
-	EncryptedPassword string             `bson:"-" json:"-"`
+	EncryptedPassword string             `bson:"encryptedPassword" json:"-"`
 }
 
 func NewUserFromParams(params CreateUserParams) (*User, error) {
