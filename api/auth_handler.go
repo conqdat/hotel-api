@@ -2,10 +2,13 @@ package api
 
 import (
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/conqdat/hotel-api/db"
 	"github.com/conqdat/hotel-api/types"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type AuthHandler struct {
@@ -15,6 +18,11 @@ type AuthHandler struct {
 type AuthParams struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type AuthResponse struct {
+	User *types.User	`json:"user"`
+	Token string 		`json:"token"`
 }
 
 func NewAuthHandle(userStore db.UserStore) *AuthHandler {
@@ -35,6 +43,27 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	if !types.IsValidPassword(user.EncryptedPassword, params.Password) {
 		return fmt.Errorf("invalid credentials")
 	}
-	// fmt.Println("authenticated -> ", user)
-	return nil
+	token := createTokenFromUser(user)
+	userRes := AuthResponse{
+		User: user,
+		Token: token,
+	}
+	return c.JSON(userRes)
+}
+
+func createTokenFromUser(user *types.User) string {
+	now := time.Now()
+	expires := now.Add(time.Hour * 4)
+	claims := jwt.MapClaims{
+		"id":        user.ID,
+		"email":     user.Email,
+		"expires": expires.Unix(), 
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims) 
+	secret := os.Getenv("JWT_SECRET")
+	tokenSt, err := token.SignedString([]byte(secret)) 
+	if err != nil {
+		return "fail to generate token"
+	}
+	return tokenSt
 }

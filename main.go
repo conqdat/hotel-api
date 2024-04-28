@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"log"
+
 	"github.com/conqdat/hotel-api/api"
 	"github.com/conqdat/hotel-api/db"
+	"github.com/conqdat/hotel-api/middleware"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 )
 
 var config = fiber.Config{
@@ -24,7 +26,7 @@ func main() {
 
 	var (
 		app     = fiber.New(config)
-		apiV1   = app.Group("/api/v1")
+		apiV1   = app.Group("/api/v1", middleware.JWTAuthentication)
 		apiAuth = app.Group("/api")
 
 		// Init Handler
