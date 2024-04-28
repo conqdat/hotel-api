@@ -2,9 +2,10 @@ package api
 
 import (
 	"fmt"
+
 	"github.com/conqdat/hotel-api/db"
+	"github.com/conqdat/hotel-api/types"
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
@@ -29,15 +30,11 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	}
 	user, err := h.userStore.GetUserByEmail(c.Context(), params.Email)
 	if err != nil {
-		fmt.Println("not found user")
 		return fmt.Errorf("invalid credentials")
 	}
-	fmt.Println(user.EncryptedPassword)
-	err = bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(params.Password))
-	if err != nil {
-		fmt.Println("fail to compare")
+	if !types.IsValidPassword(user.EncryptedPassword, params.Password) {
 		return fmt.Errorf("invalid credentials")
 	}
-	fmt.Println("authenticated -> ", user)
+	// fmt.Println("authenticated -> ", user)
 	return nil
 }

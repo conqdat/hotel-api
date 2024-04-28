@@ -2,10 +2,11 @@ package types
 
 import (
 	"fmt"
+	"regexp"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
-	"regexp"
 )
 
 const (
@@ -92,4 +93,9 @@ func NewUserFromParams(params CreateUserParams) (*User, error) {
 		Email:             params.Email,
 		EncryptedPassword: string(enpwd),
 	}, nil
+}
+
+
+func IsValidPassword(encryptedPassword , password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(encryptedPassword), []byte(password)) == nil
 }
