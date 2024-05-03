@@ -25,6 +25,11 @@ type AuthResponse struct {
 	Token string 		`json:"token"`
 }
 
+type genericResp struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+}
+
 func NewAuthHandle(userStore db.UserStore) *AuthHandler {
 	return &AuthHandler{
 		userStore: userStore,
