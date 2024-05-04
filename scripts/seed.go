@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/conqdat/hotel-api/db"
 	"github.com/conqdat/hotel-api/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 )
 
 var (
@@ -60,7 +61,7 @@ func seedHotel(name, location string, rating int) {
 	fmt.Printf("seed %v hotel successfully \n", name)
 }
 
-func seedUser(firstName, lastName, email string) {
+func seedUser(isAdmin bool, firstName, lastName, email string) {
 	user, err := types.NewUserFromParams(types.CreateUserParams{
 		FirstName: firstName,
 		LastName:  lastName,
@@ -70,6 +71,7 @@ func seedUser(firstName, lastName, email string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	user.IsAdmin = isAdmin
 	user, err = userStore.InsertUser(context.Background(), user)
 	if err != nil {
 		log.Fatal(err)
@@ -82,10 +84,10 @@ func main() {
 	seedHotel("VinFast", "UK", 4)
 	seedHotel("Something", "JP", 5)
 
-	seedUser("Dat 1", "Tran", "trandat1@gmail.com")
-	seedUser("Dat 2", "Tran", "trandat2@gmail.com")
-	seedUser("Dat 3", "Tran", "trandat3@gmail.com")
-	seedUser("Dat 4", "Tran", "trandat4@gmail.com")
+	seedUser(true, "Dat 1", "Tran", "trandat1@gmail.com")
+	seedUser(false, "Dat 2", "Tran", "trandat2@gmail.com")
+	seedUser(false, "Dat 3", "Tran", "trandat3@gmail.com")
+	seedUser(false, "Dat 4", "Tran", "trandat4@gmail.com")
 }
 
 func init() {
