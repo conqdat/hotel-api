@@ -29,20 +29,20 @@ func main() {
 		// Init Handler
 		hotelStore   = db.NewMongoHotelStore(client)
 		roomStore    = db.NewMongoRoomStore(client, hotelStore)
-		userStore  	 = db.NewMongoUserStore(client)
+		userStore    = db.NewMongoUserStore(client)
 		bookingStore = db.NewBookingStore(client)
-		
-		store      = &db.Store{
-			Hotel: hotelStore,
-			Room:  roomStore,
-			User:  userStore,
+
+		store = &db.Store{
+			Hotel:   hotelStore,
+			Room:    roomStore,
+			User:    userStore,
 			Booking: bookingStore,
 		}
 
-		hotelHandler = api.NewHotelHandler(store)
-		userHandler  = api.NewUserHandler(userStore)
-		authHandler  = api.NewAuthHandle(userStore)
-		roomHandler  = api.NewRoomHandler(store)
+		hotelHandler   = api.NewHotelHandler(store)
+		userHandler    = api.NewUserHandler(userStore)
+		authHandler    = api.NewAuthHandle(userStore)
+		roomHandler    = api.NewRoomHandler(store)
 		bookingHandler = api.NewBookingHandler(store)
 
 		app     = fiber.New(config)
@@ -74,9 +74,9 @@ func main() {
 	// Booking Handlers
 	// ADMIN
 	admin.Get("/bookings", bookingHandler.HandleGetBookings)
-	
-	
+
 	apiV1.Get("/bookings/:id", bookingHandler.HandleGetBooking)
+	apiV1.Get("/bookings/:id/cancel", bookingHandler.HandleCancelBooking)
 
 	app.Get("/", handleHelloWord)
 	app.Listen(":3000")

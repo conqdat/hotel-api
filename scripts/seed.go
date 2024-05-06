@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/conqdat/hotel-api/api"
 	"log"
 
 	"github.com/conqdat/hotel-api/db"
@@ -77,6 +78,7 @@ func seedUser(isAdmin bool, firstName, lastName, email string) {
 		log.Fatal(err)
 	}
 	fmt.Printf("seed %v %v user successfully \n", user.FirstName, user.LastName)
+	fmt.Println("token: ", api.CreateTokenFromUser(user))
 }
 
 func main() {

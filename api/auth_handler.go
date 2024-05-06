@@ -21,8 +21,8 @@ type AuthParams struct {
 }
 
 type AuthResponse struct {
-	User *types.User	`json:"user"`
-	Token string 		`json:"token"`
+	User  *types.User `json:"user"`
+	Token string      `json:"token"`
 }
 
 type genericResp struct {
@@ -48,25 +48,25 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	if !types.IsValidPassword(user.EncryptedPassword, params.Password) {
 		return fmt.Errorf("invalid credentials")
 	}
-	token := createTokenFromUser(user)
+	token := CreateTokenFromUser(user)
 	userRes := AuthResponse{
-		User: user,
+		User:  user,
 		Token: token,
 	}
 	return c.JSON(userRes)
 }
 
-func createTokenFromUser(user *types.User) string {
+func CreateTokenFromUser(user *types.User) string {
 	now := time.Now()
 	expires := now.Add(time.Hour * 4)
 	claims := jwt.MapClaims{
-		"id":        user.ID,
-		"email":     user.Email,
-		"expires": expires.Unix(), 
+		"id":      user.ID,
+		"email":   user.Email,
+		"expires": expires.Unix(),
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims) 
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	secret := os.Getenv("JWT_SECRET")
-	tokenSt, err := token.SignedString([]byte(secret)) 
+	tokenSt, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "fail to generate token"
 	}
