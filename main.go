@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 
 	"github.com/conqdat/hotel-api/api"
 	"github.com/conqdat/hotel-api/db"
-	"github.com/conqdat/hotel-api/middleware"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,7 +14,10 @@ import (
 
 var config = fiber.Config{
 	ErrorHandler: func(c *fiber.Ctx, err error) error {
-		return c.JSON(map[string]string{"error": err.Error()})
+		if apiError, ok := err.(api.Error); ok {
+			return c.Status(apiError.Code).JSON(apiError)
+		}
+		return api.NewError(http.StatusInternalServerError, err.Error())
 	},
 }
 
@@ -46,9 +49,9 @@ func main() {
 		bookingHandler = api.NewBookingHandler(store)
 
 		app     = fiber.New(config)
-		apiV1   = app.Group("/api/v1", middleware.JWTAuthentication(userStore))
+		apiV1   = app.Group("/api/v1", api.JWTAuthentication(userStore))
 		apiAuth = app.Group("/api")
-		admin   = apiV1.Group("/admin", middleware.AdminAuth)
+		admin   = apiV1.Group("/admin", api.AdminAuth)
 	)
 
 	// User Handlers

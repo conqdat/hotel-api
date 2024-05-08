@@ -29,7 +29,7 @@ func (h *HotelHandler) HandleGetRoom(c *fiber.Ctx) error {
 	id := c.Params("id")
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return err
+		return InvalidID()
 	}
 	filter := bson.M{"hotelid": oid} // I dont know why hotelID not work !!!
 	rooms, err := h.store.Room.GetRooms(c.Context(), filter)
@@ -43,7 +43,7 @@ func (h *HotelHandler) HandleGetHotelByID(c *fiber.Ctx) error {
 	id := c.Params("id")
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return err
+		return InvalidID()
 	}
 	hotel, err := h.store.Hotel.GetHotelByID(c.Context(), oid)
 	if err != nil {

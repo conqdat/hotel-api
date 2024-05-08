@@ -1,9 +1,6 @@
 package api
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/conqdat/hotel-api/db"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson"
@@ -36,13 +33,10 @@ func (h *BookingHandler) HandleGetBooking(c *fiber.Ctx) error {
 	}
 	user, err := getAuthUser(c)
 	if err != nil {
-		return err
+		return ResourceNotFound()
 	}
 	if booking.UserID != user.ID {
-		return c.Status(http.StatusUnauthorized).JSON(genericResp{
-			Type:    "error",
-			Message: "not authorized",
-		})
+		return Unauthorized()
 	}
 	return c.JSON(booking)
 }
@@ -58,10 +52,10 @@ func (h *BookingHandler) HandleCancelBooking(c *fiber.Ctx) error {
 		return err
 	}
 	if booking.UserID != user.ID {
-		return fmt.Errorf("not authorized")
+		return Unauthorized()
 	}
 	if err := h.store.Booking.UpdateBooking(c.Context(), id, bson.M{"canceled": true}); err != nil {
-		return err
+		return ResourceNotFound()
 	}
 	return c.JSON(genericResp{
 		Type:    "success",
