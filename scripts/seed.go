@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/conqdat/hotel-api/api"
 	"log"
+	"strconv"
 
 	"github.com/conqdat/hotel-api/db"
 	"github.com/conqdat/hotel-api/types"
@@ -82,9 +83,12 @@ func seedUser(isAdmin bool, firstName, lastName, email string) {
 }
 
 func main() {
-	seedHotel("Bellucia", "US", 3)
-	seedHotel("VinFast", "UK", 4)
-	seedHotel("Something", "JP", 5)
+
+	for i := 0; i < 100; i++ {
+		seedHotel("Bellucia "+strconv.Itoa(i), "US", 3)
+		seedHotel("VinFast "+strconv.Itoa(i), "UK", 4)
+		seedHotel("Something "+strconv.Itoa(i), "JP", 5)
+	}
 
 	seedUser(true, "Dat 1", "Tran", "trandat1@gmail.com")
 	seedUser(false, "Dat 2", "Tran", "trandat2@gmail.com")
