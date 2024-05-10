@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
-	"log"
-	"net/http"
-
 	"github.com/conqdat/hotel-api/api"
 	"github.com/conqdat/hotel-api/db"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
+	"net/http"
 )
 
 var config = fiber.Config{
@@ -19,6 +18,10 @@ var config = fiber.Config{
 		}
 		return api.NewError(http.StatusInternalServerError, err.Error())
 	},
+}
+
+func init() {
+
 }
 
 func main() {
