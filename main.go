@@ -2,41 +2,32 @@ package main
 
 import (
 	"context"
-	"github.com/conqdat/hotel-api/api"
-	"github.com/conqdat/hotel-api/db"
+	"github.com/fulltimegodev/hotel-reservation-nana/api"
+	"github.com/fulltimegodev/hotel-reservation-nana/db"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
-	"net/http"
+	"os"
 )
 
 var config = fiber.Config{
-	ErrorHandler: func(c *fiber.Ctx, err error) error {
-		if apiError, ok := err.(api.Error); ok {
-			return c.Status(apiError.Code).JSON(apiError)
-		}
-		return api.NewError(http.StatusInternalServerError, err.Error())
-	},
-}
-
-func init() {
-
+	ErrorHandler: api.ErrorHandler,
 }
 
 func main() {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
+	mongoEndpoint := os.Getenv("MONGO_DB_URL")
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoEndpoint))
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
 
 	var (
-
-		// Init Handler
 		hotelStore   = db.NewMongoHotelStore(client)
 		roomStore    = db.NewMongoRoomStore(client, hotelStore)
 		userStore    = db.NewMongoUserStore(client)
-		bookingStore = db.NewBookingStore(client)
+		bookingStore = db.NewMongoBookingStore(client)
 
 		store = &db.Store{
 			Hotel:   hotelStore,
@@ -45,49 +36,50 @@ func main() {
 			Booking: bookingStore,
 		}
 
-		hotelHandler   = api.NewHotelHandler(store)
 		userHandler    = api.NewUserHandler(userStore)
-		authHandler    = api.NewAuthHandle(userStore)
+		hotelHandler   = api.NewHotelHandler(store)
+		authHandler    = api.NewAuthHandler(userStore)
 		roomHandler    = api.NewRoomHandler(store)
 		bookingHandler = api.NewBookingHandler(store)
-
-		app     = fiber.New(config)
-		apiV1   = app.Group("/api/v1", api.JWTAuthentication(userStore))
-		apiAuth = app.Group("/api")
-		admin   = apiV1.Group("/admin", api.AdminAuth)
+		app            = fiber.New(config)
+		auth           = app.Group("/api")
+		apiv1          = app.Group("/api/v1", api.JWTAuthentication(userStore))
+		admin          = apiv1.Group("/admin", api.AdminAuth)
 	)
 
-	// User Handlers
-	apiV1.Get("/users/:id", userHandler.HandleGetUser)
-	apiV1.Delete("/users/:id", userHandler.HandleDeleteUser)
-	apiV1.Put("/users/:id", userHandler.HandlePutUser)
-	apiV1.Get("/users", userHandler.HandleGetUsers)
-	apiV1.Post("/users", userHandler.HandleCreateUser)
+	// auth handler
+	auth.Post("/auth", authHandler.HandleAuthenticate)
 
-	// Authentication Handlers
-	apiAuth.Post("/login", authHandler.HandleAuthenticate)
+	// Versioned API Routes
+	// user handlers
+	apiv1.Post("/user", userHandler.HandlePostUser)
+	apiv1.Get("/user", userHandler.HandleGetUsers)
+	apiv1.Get("/user/:id", userHandler.HandleGetUser)
+	apiv1.Put("user/:id", userHandler.HandlePutUser)
+	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)
 
-	// Hotel Handlers
-	apiV1.Get("/hotels", hotelHandler.HandleGetHotels)
-	apiV1.Get("/hotels/:id/rooms", hotelHandler.HandleGetRoom)
-	apiV1.Get("/hotels/:id", hotelHandler.HandleGetHotelByID)
+	// hotel handlers
+	apiv1.Get("/hotel", hotelHandler.HandleGetHotels)
+	apiv1.Get("/hotel/:id/room", hotelHandler.HandleGetHotelRooms)
+	apiv1.Get("/hotel/:id", hotelHandler.HandleGetHotel)
 
-	// Room handlers
-	apiV1.Post("/room/:id/book", roomHandler.HandleBookRoom)
-	apiV1.Get("/bookings", roomHandler.HandleGetBookings)
-	apiV1.Get("/room", roomHandler.HandleGetRooms)
+	// room handlers
+	apiv1.Get("/room", roomHandler.HandleGetRooms)
+	apiv1.Post("/room/:id/book", roomHandler.HandleBookRoom)
 
-	// Booking Handlers
-	// ADMIN
-	admin.Get("/bookings", bookingHandler.HandleGetBookings)
+	// booking handlers
+	apiv1.Get("/booking/:id", bookingHandler.HandleGetBooking)
+	apiv1.Get("/booking/:id/cancel", bookingHandler.HandleCancelBooking)
 
-	apiV1.Get("/bookings/:id", bookingHandler.HandleGetBooking)
-	apiV1.Get("/bookings/:id/cancel", bookingHandler.HandleCancelBooking)
+	// admin handlers
+	admin.Get("/booking", bookingHandler.HandleGetBookings)
 
-	app.Get("/", handleHelloWord)
-	app.Listen(":3000")
+	listenAddr := os.Getenv("HTTP_LISTEN_ADDRESS")
+	app.Listen(listenAddr)
 }
 
-func handleHelloWord(c *fiber.Ctx) error {
-	return c.JSON("Hello guys !!!")
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
+	}
 }

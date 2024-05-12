@@ -1,18 +1,26 @@
 package api
 
 import (
+	"errors"
 	"fmt"
-	"os"
-	"time"
-
-	"github.com/conqdat/hotel-api/db"
-	"github.com/conqdat/hotel-api/types"
+	"github.com/fulltimegodev/hotel-reservation-nana/db"
+	"github.com/fulltimegodev/hotel-reservation-nana/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/mongo"
+	"net/http"
+	"os"
+	"time"
 )
 
 type AuthHandler struct {
 	userStore db.UserStore
+}
+
+func NewAuthHandler(userStore db.UserStore) *AuthHandler {
+	return &AuthHandler{
+		userStore: userStore,
+	}
 }
 
 type AuthParams struct {
@@ -30,10 +38,11 @@ type genericResp struct {
 	Message string `json:"message"`
 }
 
-func NewAuthHandle(userStore db.UserStore) *AuthHandler {
-	return &AuthHandler{
-		userStore: userStore,
-	}
+func invalidCredentials(c *fiber.Ctx) error {
+	return c.Status(http.StatusBadRequest).JSON(genericResp{
+		Type:    "error",
+		Message: "invalid credentials",
+	})
 }
 
 func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
@@ -41,34 +50,40 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	if err := c.BodyParser(&params); err != nil {
 		return err
 	}
+
 	user, err := h.userStore.GetUserByEmail(c.Context(), params.Email)
 	if err != nil {
-		return fmt.Errorf("invalid credentials")
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return invalidCredentials(c)
+		}
 	}
+
 	if !types.IsValidPassword(user.EncryptedPassword, params.Password) {
-		return fmt.Errorf("invalid credentials")
+		return invalidCredentials(c)
 	}
-	token := CreateTokenFromUser(user)
-	userRes := AuthResponse{
+
+	resp := AuthResponse{
 		User:  user,
-		Token: token,
+		Token: CreateTokenFromUser(user),
 	}
-	return c.JSON(userRes)
+
+	return c.JSON(resp)
 }
 
 func CreateTokenFromUser(user *types.User) string {
 	now := time.Now()
-	expires := now.Add(time.Hour * 4)
+	expires := now.Add(time.Hour * 4).Unix()
 	claims := jwt.MapClaims{
 		"id":      user.ID,
 		"email":   user.Email,
-		"expires": expires.Unix(),
+		"expires": expires,
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	secret := os.Getenv("JWT_SECRET")
-	tokenSt, err := token.SignedString([]byte(secret))
+	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
-		return "fail to generate token"
+		fmt.Println("Failed to sign token with secret", err)
 	}
-	return tokenSt
+	return tokenString
 }

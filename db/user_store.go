@@ -3,10 +3,11 @@ package db
 import (
 	"context"
 	"fmt"
-	"github.com/conqdat/hotel-api/types"
+	"github.com/fulltimegodev/hotel-reservation-nana/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"os"
 )
 
 const userColl = "users"
@@ -15,47 +16,37 @@ type Dropper interface {
 	Drop(context.Context) error
 }
 
+type Map map[string]any
+
 type UserStore interface {
 	Dropper
 	GetUserByID(context.Context, string) (*types.User, error)
+	GetUserByEmail(context.Context, string) (*types.User, error)
 	GetUsers(context.Context) ([]*types.User, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
+	UpdateUser(context.Context, Map, types.UpdateUserParam) error
 	DeleteUser(context.Context, string) error
-	UpdateUser(ctx context.Context, filter bson.M, update types.UpdateUserParams) error
-	GetUserByEmail(ctx context.Context, email string) (*types.User, error)
 }
 
-type MongoDBStore struct {
+type MongoUserStore struct {
 	client *mongo.Client
 	coll   *mongo.Collection
 }
 
-func NewMongoUserStore(client *mongo.Client) *MongoDBStore {
-	return &MongoDBStore{
+func NewMongoUserStore(client *mongo.Client) *MongoUserStore {
+	var mongoenvdbname = os.Getenv(MongoDBNameEnvName)
+	return &MongoUserStore{
 		client: client,
-		coll:   client.Database(DBNAME).Collection(userColl),
+		coll:   client.Database(mongoenvdbname).Collection(userColl),
 	}
 }
 
-func (s *MongoDBStore) Drop(ctx context.Context) error {
+func (s *MongoUserStore) Drop(ctx context.Context) error {
+	fmt.Println("*** dropping database ***")
 	return s.coll.Drop(ctx)
 }
 
-func (s *MongoDBStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {
-	res, err := s.coll.InsertOne(ctx, user)
-	if err != nil {
-		return nil, err
-	}
-	// Ensure the inserted ID is a valid ObjectID
-	insertedID, ok := res.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return nil, fmt.Errorf("error: inserted ID is not a valid ObjectID")
-	}
-	user.ID = insertedID
-	return user, nil
-}
-
-func (s *MongoDBStore) GetUserByID(ctx context.Context, id string) (*types.User, error) {
+func (s *MongoUserStore) GetUserByID(ctx context.Context, id string) (*types.User, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
@@ -67,23 +58,42 @@ func (s *MongoDBStore) GetUserByID(ctx context.Context, id string) (*types.User,
 	return &user, nil
 }
 
-func (s *MongoDBStore) GetUsers(ctx context.Context) ([]*types.User, error) {
+func (s *MongoUserStore) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
+	var user *types.User
+	if err := s.coll.FindOne(ctx, bson.M{"email": email}).Decode(&user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *MongoUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
 	cur, err := s.coll.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
 	var users []*types.User
 	if err := cur.All(ctx, &users); err != nil {
-		return []*types.User{}, err
+		return nil, err
 	}
 	return users, nil
 }
 
-func (s *MongoDBStore) DeleteUser(ctx context.Context, id string) error {
+func (s *MongoUserStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {
+	res, err := s.coll.InsertOne(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	user.ID = res.InsertedID.(primitive.ObjectID)
+	return user, nil
+}
+
+func (s *MongoUserStore) DeleteUser(ctx context.Context, id string) error {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
+	// TODO: Try to implement error message when no user are deleted
 	_, err = s.coll.DeleteOne(ctx, bson.M{"_id": oid})
 	if err != nil {
 		return err
@@ -91,23 +101,16 @@ func (s *MongoDBStore) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *MongoDBStore) UpdateUser(ctx context.Context, filter bson.M, params types.UpdateUserParams) error {
-	update := bson.D{
-		{
-			"$set", params.ToBSON(),
-		},
+func (s *MongoUserStore) UpdateUser(ctx context.Context, filter Map, params types.UpdateUserParam) error {
+	oid, err := primitive.ObjectIDFromHex(filter["_id"].(string))
+	if err != nil {
+		return err
 	}
-	_, err := s.coll.UpdateOne(ctx, filter, update)
+	filter["_id"] = oid
+	update := bson.M{"$set": params.ToBSON()}
+	_, err = s.coll.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (s *MongoDBStore) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {
-	var user types.User
-	if err := s.coll.FindOne(ctx, bson.M{"email": email}).Decode(&user); err != nil {
-		return nil, err
-	}
-	return &user, nil
 }

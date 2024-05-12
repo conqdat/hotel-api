@@ -2,12 +2,11 @@ package db
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/conqdat/hotel-api/types"
+	"github.com/fulltimegodev/hotel-reservation-nana/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"os"
 )
 
 type BookingStore interface {
@@ -22,36 +21,12 @@ type MongoBookingStore struct {
 	coll   *mongo.Collection
 }
 
-func NewBookingStore(client *mongo.Client) *MongoBookingStore {
+func NewMongoBookingStore(client *mongo.Client) *MongoBookingStore {
+	var mongoenvdbname = os.Getenv(MongoDBNameEnvName)
 	return &MongoBookingStore{
 		client: client,
-		coll:   client.Database(DBNAME).Collection("bookings"),
+		coll:   client.Database(mongoenvdbname).Collection("bookings"),
 	}
-}
-
-func (s *MongoBookingStore) GetBookings(ctx context.Context, filter bson.M) ([]*types.Booking, error) {
-	res, err := s.coll.Find(ctx, filter)
-	if err != nil {
-		return nil, err
-	}
-	var bookings []*types.Booking
-	if err := res.All(ctx, &bookings); err != nil {
-		return nil, err
-	}
-	return bookings, nil
-}
-
-func (s *MongoBookingStore) InsertBooking(ctx context.Context, booking *types.Booking) (*types.Booking, error) {
-	res, err := s.coll.InsertOne(ctx, booking)
-	if err != nil {
-		return nil, err
-	}
-	insertedID, ok := res.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return nil, fmt.Errorf("error: inserted ID is not a valid ObjectID")
-	}
-	booking.ID = insertedID
-	return booking, nil
 }
 
 func (s *MongoBookingStore) GetBookingByID(ctx context.Context, id string) (*types.Booking, error) {
@@ -59,12 +34,33 @@ func (s *MongoBookingStore) GetBookingByID(ctx context.Context, id string) (*typ
 	if err != nil {
 		return nil, err
 	}
-
-	var booking types.Booking
+	var booking *types.Booking
 	if err := s.coll.FindOne(ctx, bson.M{"_id": oid}).Decode(&booking); err != nil {
 		return nil, err
 	}
-	return &booking, nil
+	return booking, nil
+}
+
+func (s *MongoBookingStore) GetBookings(ctx context.Context, filter bson.M) ([]*types.Booking, error) {
+	curr, err := s.coll.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	var books []*types.Booking
+	if err := curr.All(ctx, &books); err != nil {
+		return nil, err
+	}
+	return books, nil
+}
+
+func (s *MongoBookingStore) InsertBooking(ctx context.Context, booking *types.Booking) (*types.Booking, error) {
+	resp, err := s.coll.InsertOne(ctx, booking)
+	if err != nil {
+		return nil, err
+	}
+
+	booking.ID = resp.InsertedID.(primitive.ObjectID)
+	return booking, nil
 }
 
 func (s *MongoBookingStore) UpdateBooking(ctx context.Context, id string, update bson.M) error {
