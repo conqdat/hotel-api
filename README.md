@@ -1,11 +1,7 @@
-
-
-
-## Mongo Driver for go
-````https://www.mongodb.com/docs/drivers/go/current/quick-start/````
-
-## DOCKER 
-## Mongo DB
+# CONFIGURATION -> PROJECT ENVIRONMENT VARIABLE
 ```
- docker run --name my_mongodb_container -d -p 27017:27017 mongo:latest
+HTTP_LISTEN_ADDRESS := 3000
+JWT_SECRET=somethingsupersecret
+MONGO_DB_NAME=hotel-reservation
+MONGO_DB_URL=mongodb://localhost:27017
 ```
