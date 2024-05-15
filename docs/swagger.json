@@ -1,0 +1,36 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This is a sample hotel API.",
+        "title": "Hotel API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:3000",
+    "basePath": "/api/v1",
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Get a Hello World message",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "root"
+                ],
+                "summary": "Show a Hello World message",
+                "responses": {
+                    "200": {
+                        "description": "Hello guys !!!",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,24 @@
+basePath: /api/v1
+host: localhost:3000
+info:
+  contact: {}
+  description: This is a sample hotel API.
+  title: Hotel API
+  version: "1.0"
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: Get a Hello World message
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Hello guys !!!
+          schema:
+            type: string
+      summary: Show a Hello World message
+      tags:
+      - root
+swagger: "2.0"
